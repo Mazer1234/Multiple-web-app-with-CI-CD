@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  database_url: "postgresql://user:pass@postgres-service:5432/moviedb"
+  log_level: "INFO"
+  environment: "production"

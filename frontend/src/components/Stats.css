@@ -1,0 +1,17 @@
+.stats {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #3498db;
+}
+
+.stats h3 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.stats p {
+  margin: 5px 0;
+  color: #666;
+}
