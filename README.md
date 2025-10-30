@@ -40,11 +40,11 @@ minikube addons enable ingress
 
 ### Соберите образы и добавьте их в minikube
 bash
-# Backend
+**Backend**
 docker build -t movie-backend:latest ./backend
 minikube image load movie-backend:latest
 
-# Frontend
+**Frontend**
 docker build -t movie-frontend:latest ./frontend  
 minikube image load movie-frontend:latest
 Разверните в Kubernetes
@@ -57,42 +57,68 @@ kubectl apply -f k8s/frontend/
 kubectl apply -f k8s/ingress.yaml
 
 ### Доступ к приложению
-# Терминал 1 - фронтенд
+Терминал 1 - фронтенд
 kubectl port-forward service/frontend-service 8080:80
 
-# Терминал 2 - бэкенд (для API)
+Терминал 2 - бэкенд (для API)
 kubectl port-forward service/backend-service 8000:8000
 
 📁 Структура проекта
 text
 devops-project/
+
 ├── backend/                 # FastAPI приложение
+
 │   ├── app/
+
 │   │   ├── main.py         # Основное приложение
+
 │   │   └── models.py       # Модели Pydantic
+
 │   ├── requirements.txt
+
 │   └── Dockerfile
+
 ├── frontend/               # React приложение
+
 │   ├── src/
+
 │   │   ├── components/     # React компоненты
+
 │   │   ├── services/       # API клиент
+
 │   │   └── App.js
+
 │   ├── package.json
+
 │   └── Dockerfile
+
 └── k8s/                    # Kubernetes манифесты
+
     ├── backend/
+    
     │   ├── deployment.yaml
+    
     │   └── service.yaml
+    
     ├── frontend/
+    
     │   ├── deployment.yaml  
+    
     │   └── service.yaml
+    
     ├── redis/
+    
     │   ├── deployment.yaml
+    
     │   └── service.yaml
+    
     └── ingress.yaml
 
 🎯 Функциональность
+
 Frontend
+
 📋 Просмотр списка фильмов
 
 🔍 Поиск и фильтрация по жанру, году
@@ -102,6 +128,7 @@ Frontend
 📊 Статистика базы данных
 
 Backend
+
 REST API с документацией Swagger
 
 Валидация данных через Pydantic
