@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_REGISTRY = "localhost:5000"
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -12,53 +8,56 @@ pipeline {
             }
         }
 
+        stage('Install Tools') {
+            steps {
+                sh '''
+                    echo "=== Installing necessary tools ==="
+                    
+                    # Update package list
+                    apt-get update
+                    
+                    # Install Node.js and npm
+                    apt-get install -y nodejs npm
+                    
+                    # Install kubectl
+                    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+                    rm kubectl
+                    
+                    # Check installed tools
+                    echo "Node.js version: $(node --version)"
+                    echo "npm version: $(npm --version)"
+                    echo "kubectl version: $(kubectl version --client --short)"
+                '''
+            }
+        }
+
         stage('Build Frontend') {
             steps {
-                script {
-                    docker.image('node:16-alpine').inside {
-                        sh '''
-                            cd frontend
-                            npm install
-                            npm run build
-                        '''
-                    }
-                }
+                sh '''
+                    cd frontend
+                    npm install
+                    npm run build
+                '''
             }
         }
 
         stage('Build Backend') {
             steps {
-                script {
-                    docker.image('node:16-alpine').inside {
-                        sh '''
-                            cd backend
-                            npm install || true
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Build Docker Images') {
-            steps {
-                script {
-                    // Сборка frontend образа
-                    sh 'docker build -t movie-frontend:latest ./frontend'
-                    // Сборка backend образа  
-                    sh 'docker build -t movie-backend:latest ./backend'
-                    // Загрузка в Minikube
-                    sh 'minikube image load movie-frontend:latest'
-                    sh 'minikube image load movie-backend:latest'
-                }
+                sh '''
+                    cd backend
+                    npm install || true
+                '''
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                script {
-                    sh 'kubectl apply -f k8s/ --recursive --force'
-                    sh 'kubectl get pods,services,ingress'
-                }
+                sh '''
+                    echo "=== Deploying to Kubernetes ==="
+                    kubectl apply -f k8s/ --recursive --force
+                    kubectl get pods,services,ingress
+                '''
             }
         }
     }
@@ -66,9 +65,7 @@ pipeline {
     post {
         always {
             echo "=== Pipeline completed ==="
-            script {
-                sh 'kubectl get pods || true'
-            }
+            sh 'kubectl get pods || echo "kubectl not available"'
         }
         success {
             echo '✅ Pipeline completed successfully!'
