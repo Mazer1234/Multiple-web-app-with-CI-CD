@@ -1,36 +1,5 @@
 pipeline {
-    agent {
-        kubernetes {
-            yaml '''
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: node
-    image: node:16-alpine
-    command: ['cat']
-    tty: true
-    volumeMounts:
-    - name: docker-sock
-      mountPath: /var/run/docker.sock
-  - name: docker
-    image: docker:20.10
-    command: ['cat']
-    tty: true
-    volumeMounts:
-    - name: docker-sock
-      mountPath: /var/run/docker.sock
-  - name: kubectl
-    image: bitnami/kubectl:latest
-    command: ['cat']
-    tty: true
-  volumes:
-  - name: docker-sock
-    hostPath:
-      path: /var/run/docker.sock
-'''
-        }
-    }
+    agent any
 
     environment {
         DOCKER_REGISTRY = "localhost:5000"
@@ -45,57 +14,48 @@ spec:
 
         stage('Build Frontend') {
             steps {
-                container('node') {
-                    sh '''
-                    cd frontend
-                    npm install
-                    npm run build
-                    '''
-                }
+                sh '''
+                cd frontend
+                npm install
+                npm run build
+                '''
             }
         }
 
         stage('Build Backend') {
             steps {
-                container('node') {
-                    sh '''
-                    cd backend
-                    npm install || true
-                    '''
-                }
+                sh '''
+                cd backend
+                npm install || true
+                '''
             }
         }
 
         stage('Build Docker Images') {
             steps {
-                container('docker') {
-                    sh '''
-                    docker build -t movie-backend:latest ./backend
-                    docker build -t movie-frontend:latest ./frontend
-                    minikube image load movie-backend:latest
-                    minikube image load movie-frontend:latest
-                    '''
-                }
+                sh '''
+                docker build -t movie-backend:latest ./backend
+                docker build -t movie-frontend:latest ./frontend
+                minikube image load movie-backend:latest
+                minikube image load movie-frontend:latest
+                '''
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                container('kubectl') {
-                    sh '''
-                    kubectl apply -f k8s/ --recursive --force
-                    kubectl get pods,services,ingress
-                    '''
-                }
+                sh '''
+                kubectl apply -f k8s/ --recursive --force
+                kubectl get pods,services,ingress
+                '''
             }
         }
     }
 
     post {
         always {
-            container('kubectl') {
-                sh 'kubectl get pods'
-            }
+            echo "=== Pipeline completed ==="
+            sh 'kubectl get pods'
         }
     }
 }
