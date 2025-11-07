@@ -14,40 +14,51 @@ pipeline {
 
         stage('Build Frontend') {
             steps {
-                sh '''
-                cd frontend
-                npm install
-                npm run build
-                '''
+                script {
+                    docker.image('node:16-alpine').inside {
+                        sh '''
+                            cd frontend
+                            npm install
+                            npm run build
+                        '''
+                    }
+                }
             }
         }
 
         stage('Build Backend') {
             steps {
-                sh '''
-                cd backend
-                npm install || true
-                '''
+                script {
+                    docker.image('node:16-alpine').inside {
+                        sh '''
+                            cd backend
+                            npm install || true
+                        '''
+                    }
+                }
             }
         }
 
         stage('Build Docker Images') {
             steps {
-                sh '''
-                docker build -t movie-backend:latest ./backend
-                docker build -t movie-frontend:latest ./frontend
-                minikube image load movie-backend:latest
-                minikube image load movie-frontend:latest
-                '''
+                script {
+                    // Сборка frontend образа
+                    sh 'docker build -t movie-frontend:latest ./frontend'
+                    // Сборка backend образа  
+                    sh 'docker build -t movie-backend:latest ./backend'
+                    // Загрузка в Minikube
+                    sh 'minikube image load movie-frontend:latest'
+                    sh 'minikube image load movie-backend:latest'
+                }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                sh '''
-                kubectl apply -f k8s/ --recursive --force
-                kubectl get pods,services,ingress
-                '''
+                script {
+                    sh 'kubectl apply -f k8s/ --recursive --force'
+                    sh 'kubectl get pods,services,ingress'
+                }
             }
         }
     }
@@ -55,7 +66,15 @@ pipeline {
     post {
         always {
             echo "=== Pipeline completed ==="
-            sh 'kubectl get pods'
+            script {
+                sh 'kubectl get pods || true'
+            }
+        }
+        success {
+            echo '✅ Pipeline completed successfully!'
+        }
+        failure {
+            echo '❌ Pipeline failed!'
         }
     }
 }
